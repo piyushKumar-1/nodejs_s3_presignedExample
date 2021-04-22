@@ -15,10 +15,10 @@ require('dotenv').config();
 
 var AWS = require('aws-sdk');
 
-var bucketName = 'testpk99';
+var bucketName = 'BUCKET_NAME';
 var credentials = {
-    accessKeyId: 'AKIAVZLIF2BYRVF7PRCI',
-    secretAccessKey : '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'
+    accessKeyId: 'ACCESS_KEY',
+    secretAccessKey : 'SECRET_KEY'
 };
 
 
@@ -34,7 +34,7 @@ app.get('/',function(req,res){
 
 app.get("/allfiles", function(req, res){
   var params = {
-  Bucket: bucketName",
+  Bucket: bucketName,
   // MaxKeys: 2
  };
 
@@ -51,7 +51,7 @@ app.get('/upload',function(req,res){
 app.post('/upload', function(req, res){
   let filename = req.body.filename;
   var presignedUPLOADURL = s3.getSignedUrl('putObject', {
-      Bucket: bucketName',
+      Bucket: bucketName,
       Key: filename, //filename
       Expires: 1000 //time to expire in seconds
   });
@@ -61,7 +61,7 @@ app.post('/upload', function(req, res){
 app.post('/download', function(req, res){
   let filename = req.body.filename;
   var presignedDownloadURL = s3.getSignedUrl('getObject', {
-      Bucket: bucketName',
+      Bucket: bucketName,
       Key: filename, //filename
       Expires: 1000 //time to expire in seconds
   });

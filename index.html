@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>Test S3 presigned URL for file uploding and downloading</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/css/all.min.css" rel="stylesheet">
+    <!-- JS, Popper.js, and jQuery -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js" integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI" crossorigin="anonymous"></script>
+    <style media="screen">
+      .pointer{
+        cursor: pointer;
+        padding-top: 10px;
+        color: blue;
+        transition: all .3s;
+      }
+      .pointer:hover{
+        color: black;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container mt-5">
+
+      <div class="row">
+        <div class="col-sm-6 border rounded">
+          <div class="border-bottom">
+            <div class="p-3">
+              <h3>Upload Test</h3>
+            </div>
+          </div>
+          <div class="p-3 text-center">
+            <form class="" method="post">
+              <input type="file" name="file" value="">
+              <button onclick="getSignedUrlForUpload(event)" name="button">Submit</button>
+            </form>
+          </div>
+        </div>
+        <div class="col-sm-6 border rounded">
+          <div class="border-bottom">
+            <div class="p-3">
+              <h3>Download Test</h3>
+            </div>
+          </div>
+          <div class="p-3">
+            <div class="text-left" id="downloads">
+
+            </div>
+
+          </div>
+        </div>
+      </div>
+      <div class="row p-5">
+        <div class="col-sm-12">
+          <div class="p-5 text-center" id="loading">
+            <i class="fa fa-spinner fa-spin fa-3x"></i><br>
+            <small>Uploading........</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+
+  <script type="text/javascript">
+
+    var downloads = document.getElementById("downloads");
+
+    var loading = document.getElementById("loading");
+    loading.style.display = "none";
+
+
+    function makeAndClick(url){
+      var a = document.createElement('a');
+      a.setAttribute('href', url);
+      a.click();
+    }
+
+    function download(event){
+      console.log(event.target.innerText);
+
+      var filename = event.target.innerText;
+
+      var myHeaders = new Headers();
+      myHeaders.append("Content-Type", "application/json");
+
+      var raw = JSON.stringify({"filename":filename});
+
+      var requestOptions = {
+        method: 'POST',
+        headers: myHeaders,
+        body: raw,
+        redirect: 'follow'
+      };
+
+      fetch("/download", requestOptions)
+        .then(response => response.text())
+        .then(result => makeAndClick(result))
+        .catch(error => console.log('error', error));
+    }
+
+    function getAllFiles(){
+      var requestOptions = {
+        method: 'GET',
+        redirect: 'follow'
+      };
+
+      fetch("/allfiles", requestOptions)
+        .then(response => response.json())
+        .then(result => {
+          console.log(result);
+          for(let i=0;i<result.length;i++){
+            var item = document.createElement('div');
+            item.setAttribute('onclick', 'download(event)');
+            item.setAttribute('class', 'w-100 pointer');
+            item.innerText = result[i].Key;
+            downloads.appendChild(item);
+          }
+        })
+        .catch(error => console.log('error', error));
+    }
+
+    function uploadHere(url, file){
+      let filename = file.name;
+      var formdata = new FormData();
+      formdata.append("", file, file.name);
+      loading.style.display = "block";
+      var requestOptions = {
+        method: 'PUT',
+        body: formdata,
+        redirect: 'follow',
+      };
+
+      fetch(url, requestOptions)
+        .then(response => response.text())
+        .then(result => {
+          console.log("done");
+          loading.style.display = "none";
+          var item = document.createElement('div');
+          item.setAttribute('onclick', 'download(event)');
+          item.setAttribute('class', 'w-100 pointer');
+          item.innerText = filename;
+          var children = downloads.children;
+          var flag = true;
+          for(let j=0; j<children.length;j++){
+            if(children[j].innerText.indexOf(filename)!=-1){
+              flag=false;
+              break;
+            }
+          }
+          if(flag){
+            downloads.appendChild(item);
+          }
+        })
+        .catch(error => {
+          console.log(error);
+          loading.style.display = "none";
+        });
+      }
+
+
+    function getSignedUrlForUpload(event){
+      event.preventDefault();
+      var file = event.target.parentNode.file.files[0];
+      var filename = file.name;
+      var myHeaders = new Headers();
+      myHeaders.append("Content-Type", "application/json");
+
+      var raw = JSON.stringify({"filename":filename});
+
+      var requestOptions = {
+        method: 'POST',
+        headers: myHeaders,
+        body: raw,
+        redirect: 'follow'
+      };
+
+      fetch("/upload", requestOptions)
+        .then(response => response.text())
+        .then(result => uploadHere(result, file))
+        .catch(error => console.log('error', error));
+      }
+
+      getAllFiles();
+  </script>
+</html>
